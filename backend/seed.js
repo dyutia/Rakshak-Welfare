@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
-const Scheme = require("./models/Scheme"); // Ensure path is correct
+const Scheme = require("./models/Scheme");
 
 dotenv.config();
 
@@ -8,17 +8,24 @@ const schemes = [
 	{
 		name: "PM-Kisan Samman Nidhi",
 		department: "Department of Agriculture and Farmers Welfare",
-		state: "Central", // Use "Central" for schemes available nationwide
+		state: "Central",
 		description:
-			"Financial benefit of ₹6,000 per year to all landholding farmer families.",
+			"Financial benefit of Rs 6,000 per year to all landholding farmer families.",
 		eligibility: {
-			ageMin: 18,
-			ageMax: 100,
+			age: {
+				min: 18,
+				max: 100,
+			},
 			gender: "All",
-			caste: ["General", "OBC", "SC", "ST"], // List individual castes instead of "All"
-			annualIncomeLimit: 200000,
+			caste: ["General", "OBC", "SC", "ST"],
+			incomeLimit: 200000,
 			residencyRequired: false,
 		},
+		requiredDocuments: [
+			{ docName: "Aadhaar Card", isMandatory: true },
+			{ docName: "Land Records", isMandatory: true },
+			{ docName: "Bank Passbook", isMandatory: true },
+		],
 		applicationLink: "https://pmkisan.gov.in/",
 		isActive: true,
 	},
@@ -27,15 +34,21 @@ const schemes = [
 		department: "National Health Authority",
 		state: "Central",
 		description:
-			"Health cover of ₹5 Lakhs per family per year for secondary and tertiary care.",
+			"Health cover of Rs 5 Lakhs per family per year for secondary and tertiary care.",
 		eligibility: {
-			ageMin: 0,
-			ageMax: 100,
+			age: {
+				min: 0,
+				max: 100,
+			},
 			gender: "All",
 			caste: ["General", "OBC", "SC", "ST", "EWS"],
-			annualIncomeLimit: 500000,
+			incomeLimit: 500000,
 			residencyRequired: false,
 		},
+		requiredDocuments: [
+			{ docName: "Aadhaar Card", isMandatory: true },
+			{ docName: "Ration Card", isMandatory: true },
+		],
 		applicationLink: "https://dashboard.pmjay.gov.in/",
 		isActive: true,
 	},
@@ -45,13 +58,20 @@ const schemes = [
 		state: "Maharashtra",
 		description: "Monthly financial assistance for women in Maharashtra.",
 		eligibility: {
-			ageMin: 21,
-			ageMax: 65,
+			age: {
+				min: 21,
+				max: 65,
+			},
 			gender: "Female",
 			caste: ["General", "OBC", "SC", "ST", "EWS"],
-			annualIncomeLimit: 250000,
+			incomeLimit: 250000,
 			residencyRequired: true,
 		},
+		requiredDocuments: [
+			{ docName: "Aadhaar Card", isMandatory: true },
+			{ docName: "Income Certificate", isMandatory: true },
+			{ docName: "Domicile Certificate", isMandatory: true },
+		],
 		applicationLink: "https://ladlibehna.maharashtra.gov.in/",
 		isActive: true,
 	},
@@ -62,11 +82,9 @@ const seedDB = async () => {
 		await mongoose.connect(process.env.MONGO_URI);
 		console.log("Connected to Atlas for seeding...");
 
-		// 1. Wipe current data to avoid duplicates
 		await Scheme.deleteMany({});
 		console.log("Cleared existing schemes.");
 
-		// 2. Insert new data
 		await Scheme.insertMany(schemes);
 		console.log(`${schemes.length} actual government schemes added!`);
 

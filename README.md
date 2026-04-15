@@ -1,41 +1,47 @@
-# Rakshak-Welfare
+# Rakshak Welfare
 
-**Rakshak-Welfare** is an intelligent welfare-access platform being built to automate government scheme discovery and reduce application rejections for Indian citizens.
+Rakshak Welfare is a full-stack welfare-assistance platform that helps users:
+- register and manage profile data
+- verify email and securely authenticate
+- recover account access with forgot-password flow
+- check eligible and potential government schemes
+- run document audit on uploaded images
 
-It is designed to combine:
-- profile-based scheme matching
-- AI-powered document auditing
-- multilingual voice support
-- proactive WhatsApp notifications
+## Current Features
 
-## Vision
+### Authentication
+- Register with profile details
+- Email verification via verification link
+- Login restricted until email is verified
+- Resend verification email
+- Forgot password via reset email link
+- Reset password with expiring token
+- Logout via HTTP-only cookie clearing
 
-The goal is to move from passive eligibility checking to active welfare delivery, where eligible citizens are guided, validated, and notified end-to-end.
+### User and Schemes
+- Profile update endpoint (`/api/users/me`)
+- Eligibility matching (`/api/schemes/eligible`) with:
+  - `eligible` schemes
+  - `potential` schemes
 
-## Current Status (What Works Today)
+### Document Audit
+- Upload-based document audit endpoint (`/api/audit/audit-upload`)
 
-The current codebase has a working Node.js backend with:
-- user registration and login with JWT (`/api/auth/*`)
-- protected AI document audit upload (`/api/audit/audit-upload`)
-- MongoDB integration via Mongoose
+### Database Reliability
+- MongoDB connection fallback support:
+  - primary: `MONGO_URI`
+  - fallback for restrictive networks: `MONGO_URI_DIRECT`
 
-Also present in code (but not fully wired in runtime yet):
-- scheme eligibility routes (`schemeRoutes.js`)
-- translation utility (`bhashiniService.js`)
-- scheme seed script (`seed.js`)
+## Tech Stack
 
-## Planned Features (In Progress)
+- Backend: Node.js, Express, Mongoose
+- Frontend: React + Vite 
+- Auth: JWT + HTTP-only cookies
+- Email: Nodemailer (SMTP)
 
-These are planned and will be completed:
-- full scheme APIs under `/api/schemes`
-- multilingual voice flows (Bhashini ASR/TTS)
-- proactive WhatsApp notification engine (Twilio)
-- admin-triggered new-scheme matching and alert broadcasting
-- React frontend for citizen and admin workflows
+## Local Setup
 
-## One-Command Start
-
-### Backend (Current)
+### 1) Backend
 
 ```bash
 cd backend
@@ -43,9 +49,9 @@ npm install
 node app.js
 ```
 
-Note: `npm start` script is not added yet in current `package.json`.
+Runs on: `http://localhost:5000`
 
-### Frontend (Planned)
+### 2) Frontend
 
 ```bash
 cd frontend
@@ -53,90 +59,76 @@ npm install
 npm run dev
 ```
 
-Target URL: `http://localhost:5173`
+Runs on: `http://localhost:5173`
+
+## Backend Environment Variables
+
+Create `backend/.env`:
+
+```env
+PORT=5000
+NODE_ENV=development
+
+# Mongo
+MONGO_URI=your_mongodb_srv_uri
+MONGO_URI_DIRECT=your_mongodb_direct_uri
+
+# Auth
+JWT_SECRET=your_strong_jwt_secret
+CLIENT_URL=http://localhost:5173
+
+# SMTP (required for real verification/forgot-password emails)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your_app_password_without_spaces
+SMTP_FROM="Rakshak Welfare <your-email@gmail.com>"
+```
+
+## API Endpoints
+
+### Auth
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/auth/register` | Create unverified user and send verification email |
+| POST/GET | `/api/auth/verify-email` | Verify account using token |
+| POST | `/api/auth/resend-verification` | Resend verification email |
+| POST | `/api/auth/login` | Login only if email verified |
+| POST | `/api/auth/logout` | Logout user |
+| POST | `/api/auth/forgot-password` | Send password reset email |
+| POST | `/api/auth/reset-password` | Reset password with token |
+
+### User / Schemes / Audit
+
+| Method | Endpoint | Description |
+|---|---|---|
+| PATCH | `/api/users/me` | Update profile and recalculate scheme results |
+| GET | `/api/schemes/eligible` | Fetch eligible and potential schemes |
+| POST | `/api/audit/audit-upload` | Upload and audit document |
+
+## Frontend Notes
+
+- Password fields now include reusable eye-icon show/hide toggles.
+- Verification and reset flows are link-first (real-world style).
+- UI is simplified/minimal compared to earlier versions.
 
 ## Project Structure
 
 ```text
 rakshak-welfare/
 |-- backend/
-|   |-- controllers/      # Auth + scheme logic
-|   |-- models/           # User and Scheme schemas
-|   |-- routes/           # Auth, Audit, Scheme routes
-|   |-- utils/            # Matcher, OCR audit, translation services
-|   |-- middleware/       # JWT protection
-|   |-- config/           # DB connection
-|   |-- seed.js           # Scheme seed data
-|   `-- app.js            # Express server entry
-|-- frontend/             # React app (to be completed)
-|-- .gitignore
+|   |-- app.js
+|   |-- config/
+|   |-- controllers/
+|   |-- middleware/
+|   |-- models/
+|   |-- routes/
+|   |-- utils/
+|   `-- seed.js
+|-- frontend/
+|   |-- src/
+|   `-- vite.config.js
 `-- README.md
 ```
-
-## How It Works (Target Flow)
-
-- Smart Profile: User registers with socio-economic profile data.
-- Eligibility Matcher: Backend matches profile against scheme criteria.
-- AI Document Audit: OCR + fuzzy matching checks uploaded documents before submission.
-- Voice Agent: Users query schemes in regional languages.
-- Proactive Alerts: Users receive WhatsApp notifications for newly relevant schemes.
-
-## API Endpoints
-
-### Available Now
-
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/api/auth/register` | Register user and return JWT |
-| POST | `/api/auth/login` | Login and return JWT |
-| POST | `/api/audit/audit-upload` | Protected document audit upload |
-
-### Planned / To Be Exposed
-
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/schemes/eligible` | Fetch matched schemes based on JWT profile |
-| GET | `/api/schemes/voice-info/:name?lang=hi` | Language-specific speech-ready scheme info |
-| POST | `/api/schemes/voice-query` | Audio query processing via Bhashini ASR |
-| POST | `/api/schemes/notify-new-scheme` | Trigger proactive alerts to matched users |
-
-## External Services Setup (For Planned Modules)
-
-### 1) Bhashini (Voice and Translation)
-
-Add in backend `.env`:
-
-```env
-BHASHINI_API_KEY=your_key
-```
-
-### 2) Twilio WhatsApp
-
-Add in backend `.env`:
-
-```env
-TWILIO_ACCOUNT_SID=your_sid
-TWILIO_AUTH_TOKEN=your_token
-TWILIO_WHATSAPP_NUMBER=+14155238886
-```
-
-## Environment Variables (Backend)
-
-```env
-PORT=5000
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_strong_secret
-BHASHINI_API_KEY=your_key
-TWILIO_ACCOUNT_SID=your_sid
-TWILIO_AUTH_TOKEN=your_token
-TWILIO_WHATSAPP_NUMBER=+14155238886
-```
-
-## Roadmap
-
-1. Add backend scripts (`start`, `dev`, `seed`) and `.env.example`.
-2. Mount and stabilize `/api/schemes` routes.
-3. Complete Twilio alert pipeline.
-4. Complete voice query pipeline with Bhashini.
-5. Build and integrate React frontend.
-6. Add tests and deployment pipeline.

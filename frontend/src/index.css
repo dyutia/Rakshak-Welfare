@@ -1,0 +1,179 @@
+@import "tailwindcss";
+
+:root {
+	font-family:
+		"Inter",
+		-apple-system,
+		BlinkMacSystemFont,
+		"Segoe UI",
+		"Roboto",
+		sans-serif;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	min-height: 100vh;
+	background: #0b1220;
+	color: #f1f5f9;
+	line-height: 1.5;
+}
+
+#root {
+	min-height: 100vh;
+}
+
+/* Form primitives */
+input,
+select,
+textarea {
+	transition: border-color 0.2s ease;
+	border-radius: 8px;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+	outline: none;
+	ring: 2px;
+	ring-color: #10b981;
+	border-color: #10b981;
+}
+
+/* Button improvements */
+button {
+	transition: background-color 0.2s ease;
+	border-radius: 8px;
+	font-weight: 500;
+}
+
+button:hover:not(:disabled) {
+	box-shadow: none;
+}
+
+/* Surface styling */
+.bg-slate-900\/70,
+.bg-slate-800\/50 {
+	backdrop-filter: blur(4px);
+	border: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+/* Form sections */
+.form-section {
+	background: rgba(15, 23, 42, 0.78);
+	border: 1px solid rgba(71, 85, 105, 0.2);
+	border-radius: 12px;
+	padding: 20px;
+	margin-bottom: 16px;
+}
+
+.form-section h3 {
+	color: #e2e8f0;
+	font-size: 17px;
+	font-weight: 600;
+	margin-bottom: 14px;
+	padding-bottom: 8px;
+	border-bottom: 1px solid rgba(71, 85, 105, 0.2);
+}
+
+/* Grid layout for forms */
+.form-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+	gap: 14px;
+	margin-bottom: 16px;
+}
+
+.form-grid.full-width {
+	grid-template-columns: 1fr;
+}
+
+/* Status messages */
+.status-message {
+	padding: 10px 12px;
+	border-radius: 8px;
+	font-weight: 400;
+	margin-bottom: 12px;
+	font-size: 14px;
+}
+
+.status-error {
+	background: rgba(239, 68, 68, 0.08);
+	border: 1px solid rgba(239, 68, 68, 0.24);
+	color: #fecaca;
+}
+
+.status-success {
+	background: rgba(16, 185, 129, 0.08);
+	border: 1px solid rgba(16, 185, 129, 0.24);
+	color: #bbf7d0;
+}
+
+/* Tab navigation */
+.tab-button {
+	position: relative;
+	transition: background-color 0.2s ease;
+}
+
+.tab-button:hover {
+	background: rgba(71, 85, 105, 0.35);
+}
+
+.tab-button.active::after {
+	display: none;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+	.form-grid {
+		grid-template-columns: 1fr;
+	}
+
+	main {
+		padding: 16px;
+	}
+
+	header .flex {
+		flex-direction: column;
+		align-items: stretch;
+		gap: 12px;
+	}
+
+	.tab-button {
+		flex: 1;
+		justify-content: center;
+		min-width: 0;
+	}
+
+	.form-section {
+		padding: 20px;
+	}
+
+	.status-message {
+		font-size: 14px;
+	}
+}
+
+@media (max-width: 480px) {
+	.form-section h3 {
+		font-size: 16px;
+	}
+
+	.form-section {
+		padding: 16px;
+	}
+
+	button {
+		padding: 10px 16px;
+		font-size: 14px;
+	}
+
+	input,
+	select {
+		padding: 10px;
+		font-size: 16px; /* Prevents zoom on iOS */
+	}
+}
