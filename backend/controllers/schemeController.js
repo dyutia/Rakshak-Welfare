@@ -3,6 +3,14 @@ const Scheme = require("../models/Scheme");
 const checkEligibility = require("../utils/matcher");
 const { translateText } = require("../utils/bhashiniService");
 
+const buildSchemeResponse = (scheme, result) => ({
+	schemeId: scheme._id,
+	schemeName: scheme.name,
+	description: scheme.description,
+	reasons: result.reasons,
+	missingDocuments: result.missingDocuments,
+});
+
 exports.getEligibleSchemes = async (req, res) => {
 	try {
 		const userId = req.user.id;
@@ -31,16 +39,11 @@ exports.getEligibleSchemes = async (req, res) => {
 
 		for (const scheme of schemes) {
 			const result = checkEligibility(user, scheme);
-			const schemeData = {
-				schemeId: scheme._id,
-				schemeName: scheme.name,
-				reasons: result.reasons,
-				missingDocuments: result.missingDocuments,
-			};
+			const schemeData = buildSchemeResponse(scheme, result);
 
-			if (result.eligible && result.missingDocuments.length === 0) {
+			if (result.eligible) {
 				eligible.push(schemeData);
-			} else if (result.eligible && result.missingDocuments.length > 0) {
+			} else if (result.potential) {
 				potential.push(schemeData);
 			}
 		}

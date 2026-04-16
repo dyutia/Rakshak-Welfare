@@ -68,6 +68,18 @@ const userSchema = new mongoose.Schema(
 		},
 
 		// Documents
+		documentsHeld: [
+			{
+				type: String,
+				trim: true,
+			},
+		],
+		verifiedDocuments: [
+			{
+				type: String,
+				trim: true,
+			},
+		],
 		uploadedDocuments: [
 			{
 				docType: String,

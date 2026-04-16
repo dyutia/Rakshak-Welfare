@@ -2,6 +2,14 @@ const User = require("../models/User");
 const Scheme = require("../models/Scheme");
 const checkEligibility = require("../utils/matcher");
 
+const buildSchemeResponse = (scheme, result) => ({
+	schemeId: scheme._id,
+	schemeName: scheme.name,
+	description: scheme.description,
+	reasons: result.reasons,
+	missingDocuments: result.missingDocuments,
+});
+
 const getEligibleSchemesForUser = async (user) => {
 	const schemes = await Scheme.find({
 		isActive: true,
@@ -21,16 +29,11 @@ const getEligibleSchemesForUser = async (user) => {
 
 	for (const scheme of schemes) {
 		const result = checkEligibility(user, scheme);
-		const schemeData = {
-			schemeId: scheme._id,
-			schemeName: scheme.name,
-			reasons: result.reasons,
-			missingDocuments: result.missingDocuments,
-		};
+		const schemeData = buildSchemeResponse(scheme, result);
 
-		if (result.eligible && result.missingDocuments.length === 0) {
+		if (result.eligible) {
 			eligible.push(schemeData);
-		} else if (result.eligible && result.missingDocuments.length > 0) {
+		} else if (result.potential) {
 			potential.push(schemeData);
 		}
 	}
@@ -49,6 +52,7 @@ exports.updateProfile = async (req, res) => {
 			"state",
 			"district",
 			"familyId",
+			"documentsHeld",
 		];
 
 		const updates = {};
@@ -56,6 +60,18 @@ exports.updateProfile = async (req, res) => {
 			if (req.body[key] !== undefined) {
 				updates[key] = req.body[key];
 			}
+		}
+
+		if (updates.documentsHeld !== undefined) {
+			if (!Array.isArray(updates.documentsHeld)) {
+				return res
+					.status(400)
+					.json({ message: "documentsHeld must be an array of strings" });
+			}
+			updates.documentsHeld = updates.documentsHeld
+				.filter((doc) => typeof doc === "string")
+				.map((doc) => doc.trim())
+				.filter(Boolean);
 		}
 
 		const user = await User.findByIdAndUpdate(req.user.id, updates, {

@@ -111,8 +111,7 @@ exports.forgotPassword = async (req, res) => {
 		if (!user) {
 			return res.status(200).json({
 				success: true,
-				message:
-					"If the account exists, a password reset email has been sent.",
+				message: "If the account exists, a password reset email has been sent.",
 			});
 		}
 
@@ -219,6 +218,7 @@ exports.register = async (req, res) => {
 			email,
 			password,
 			governmentId,
+			governmentIdType,
 			familyId,
 			age,
 			gender,
@@ -226,6 +226,7 @@ exports.register = async (req, res) => {
 			annualIncome,
 			state,
 			district,
+			documentsHeld,
 		} = req.body;
 		const normalizedEmail = email?.trim().toLowerCase();
 
@@ -252,6 +253,19 @@ exports.register = async (req, res) => {
 		// 4. Hash the password
 		const salt = await bcrypt.genSalt(10);
 		const hashedPassword = await bcrypt.hash(password, salt);
+		const normalizedDocumentsHeld = Array.isArray(documentsHeld)
+			? documentsHeld
+					.filter((doc) => typeof doc === "string")
+					.map((doc) => doc.trim())
+					.filter(Boolean)
+			: [];
+
+		// Auto-add government ID document based on type
+		const documentsSet = new Set(normalizedDocumentsHeld);
+		if (governmentIdType === "Aadhaar") documentsSet.add("Aadhaar Card");
+		if (governmentIdType === "PAN") documentsSet.add("PAN Card");
+		if (governmentIdType === "Voter ID") documentsSet.add("Voter ID");
+		const finalDocumentsHeld = Array.from(documentsSet);
 
 		// 5. Create user as unverified
 		const user = new User({
@@ -266,6 +280,7 @@ exports.register = async (req, res) => {
 			annualIncome,
 			state,
 			district,
+			documentsHeld: finalDocumentsHeld,
 		});
 		const verificationToken = setEmailVerificationDetails(user);
 		await user.save();
@@ -334,8 +349,7 @@ exports.resendVerification = async (req, res) => {
 		if (!user || user.isEmailVerified) {
 			return res.status(200).json({
 				success: true,
-				message:
-					"If that account exists, a verification email has been sent.",
+				message: "If that account exists, a verification email has been sent.",
 			});
 		}
 

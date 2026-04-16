@@ -59,7 +59,7 @@ const schemes = [
 		description: "Monthly financial assistance for women in Maharashtra.",
 		eligibility: {
 			age: {
-				min: 21,
+				min: 22,
 				max: 65,
 			},
 			gender: "Female",

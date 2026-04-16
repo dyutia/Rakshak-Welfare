@@ -14,6 +14,7 @@ const initialRegister = {
 	state: "",
 	district: "",
 	familyId: "",
+	documentsHeld: [],
 };
 
 const initialProfile = {
@@ -330,11 +331,26 @@ function App() {
 	const [eligibleData, setEligibleData] = useState(null);
 	const [auditData, setAuditData] = useState(null);
 	const [auditFile, setAuditFile] = useState(null);
+	const [auditDocType, setAuditDocType] = useState("");
 
 	useEffect(() => {
 		const savedToken = localStorage.getItem("rw_token");
+		const params = new URLSearchParams(window.location.search);
+		const tokenFromUrl = params.get("token");
+		const emailFromUrl = params.get("email");
+		const pathname = window.location.pathname;
+
 		if (savedToken) {
 			setToken(savedToken);
+			if (
+				!tokenFromUrl &&
+				!emailFromUrl &&
+				pathname !== "/verify-email" &&
+				pathname !== "/verify" &&
+				pathname !== "/reset-password"
+			) {
+				setActiveTab("eligibility");
+			}
 		}
 	}, []);
 
@@ -364,7 +380,10 @@ function App() {
 		const emailFromUrl = params.get("email");
 		const pathname = window.location.pathname;
 
-		if ((pathname === "/verify-email" || pathname === "/verify") && tokenFromUrl) {
+		if (
+			(pathname === "/verify-email" || pathname === "/verify") &&
+			tokenFromUrl
+		) {
 			setVerifyForm((prev) => ({ ...prev, email: emailFromUrl || prev.email }));
 			setActiveTab("verify-email");
 			verifyEmailByToken(tokenFromUrl);
@@ -545,6 +564,12 @@ function App() {
 		}
 	};
 
+	useEffect(() => {
+		if (activeTab === "eligibility" && token) {
+			handleEligibility();
+		}
+	}, [activeTab, token]);
+
 	const handleAudit = async (e) => {
 		e.preventDefault();
 		setLoading(true);
@@ -556,9 +581,13 @@ function App() {
 			if (!auditFile) {
 				throw new Error("Please choose a document image");
 			}
+			if (!auditDocType) {
+				throw new Error("Please select a document type");
+			}
 
 			const formData = new FormData();
 			formData.append("document", auditFile);
+			formData.append("docType", auditDocType);
 
 			const data = await apiRequestForm("/api/audit/audit-upload", {
 				method: "POST",
@@ -756,7 +785,9 @@ function App() {
 								<span className="mx-2 text-slate-600">|</span>
 								<button
 									type="button"
-									onClick={() => handleResendVerification(loginForm.email.trim())}
+									onClick={() =>
+										handleResendVerification(loginForm.email.trim())
+									}
 									className="font-medium text-emerald-400 hover:text-emerald-200"
 									disabled={loading || !loginForm.email.trim()}
 								>
@@ -795,7 +826,9 @@ function App() {
 							</div>
 							<button
 								type="button"
-								onClick={() => handleResendVerification(verifyForm.email.trim())}
+								onClick={() =>
+									handleResendVerification(verifyForm.email.trim())
+								}
 								className="w-full rounded-lg border border-slate-600 px-4 py-3 text-slate-200 font-medium hover:bg-slate-800 disabled:opacity-70 disabled:cursor-not-allowed transition-all"
 								disabled={loading || !verifyForm.email.trim()}
 							>
@@ -1258,6 +1291,52 @@ function App() {
 								</div>
 							</div>
 
+							{/* Additional Documents */}
+							<div className="space-y-4">
+								<h4 className="text-md font-semibold text-slate-200 border-b border-slate-700 pb-2">
+									Additional Documents
+								</h4>
+								<p className="text-sm text-slate-400">
+									Select any additional documents you currently hold. This helps
+									us determine your eligibility for more schemes.
+								</p>
+								<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+									{[
+										"Income Certificate",
+										"Caste Certificate",
+										"Domicile Certificate",
+										"Ration Card",
+										"E-Shram Card",
+										"Kisan Credit Card",
+										"7/12 Extract",
+										"Disability Certificate",
+										"Student ID",
+										"Marriage Certificate",
+									].map((doc) => (
+										<label
+											key={doc}
+											className="flex items-center space-x-2 cursor-pointer"
+										>
+											<input
+												type="checkbox"
+												className="rounded border-slate-700 bg-slate-950 text-emerald-500 focus:ring-emerald-500/20"
+												checked={registerForm.documentsHeld.includes(doc)}
+												onChange={(e) => {
+													const checked = e.target.checked;
+													setRegisterForm((prev) => ({
+														...prev,
+														documentsHeld: checked
+															? [...prev.documentsHeld, doc]
+															: prev.documentsHeld.filter((d) => d !== doc),
+													}));
+												}}
+											/>
+											<span className="text-sm text-slate-300">{doc}</span>
+										</label>
+									))}
+								</div>
+							</div>
+
 							<button
 								type="submit"
 								className="w-full rounded-lg bg-emerald-500 px-4 py-3 text-slate-950 font-medium hover:bg-emerald-400 disabled:opacity-70 disabled:cursor-not-allowed transition-all"
@@ -1314,6 +1393,16 @@ function App() {
 																{item.description}
 															</div>
 														)}
+														{item.reasons?.length > 0 && (
+															<div className="mt-2 text-xs text-slate-300">
+																<strong>Notes:</strong>
+																<ul className="list-disc pl-5 mt-1">
+																	{item.reasons.map((reason, index) => (
+																		<li key={index}>{reason}</li>
+																	))}
+																</ul>
+															</div>
+														)}
 													</div>
 												))
 											) : (
@@ -1343,6 +1432,16 @@ function App() {
 																{item.description}
 															</div>
 														)}
+														{item.reasons?.length > 0 && (
+															<div className="mt-2 text-xs text-slate-300">
+																<strong>Potential reason:</strong>
+																<ul className="list-disc pl-5 mt-1">
+																	{item.reasons.map((reason, index) => (
+																		<li key={index}>{reason}</li>
+																	))}
+																</ul>
+															</div>
+														)}
 													</div>
 												))
 											) : (
@@ -1367,6 +1466,38 @@ function App() {
 						</p>
 
 						<form onSubmit={handleAudit} className="space-y-4">
+							<div className="space-y-2">
+								<label className="text-sm font-medium text-slate-300">
+									Document Type <span className="text-emerald-400">*</span>
+								</label>
+								<select
+									className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+									value={auditDocType}
+									onChange={(e) => setAuditDocType(e.target.value)}
+									required
+								>
+									<option value="">Select document type</option>
+									<option value="Income Certificate">Income Certificate</option>
+									<option value="Caste Certificate">Caste Certificate</option>
+									<option value="Domicile Certificate">
+										Domicile Certificate
+									</option>
+									<option value="Ration Card">Ration Card</option>
+									<option value="E-Shram Card">E-Shram Card</option>
+									<option value="Kisan Credit Card">Kisan Credit Card</option>
+									<option value="7/12 Extract">7/12 Extract</option>
+									<option value="Disability Certificate">
+										Disability Certificate
+									</option>
+									<option value="Student ID">Student ID</option>
+									<option value="Marriage Certificate">
+										Marriage Certificate
+									</option>
+									<option value="Aadhaar Card">Aadhaar Card</option>
+									<option value="PAN Card">PAN Card</option>
+									<option value="Voter ID">Voter ID</option>
+								</select>
+							</div>
 							<div className="space-y-2">
 								<label className="text-sm font-medium text-slate-300">
 									Document Image <span className="text-emerald-400">*</span>
