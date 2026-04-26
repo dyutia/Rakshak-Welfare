@@ -9,6 +9,14 @@ const buildSchemeResponse = (scheme, result) => ({
 	description: scheme.description,
 	reasons: result.reasons,
 	missingDocuments: result.missingDocuments,
+	verificationRequired: result.verificationRequired || [],
+	eligibilityPercentage: result.eligibilityPercentage || 0,
+	eligibilityFactors: result.eligibilityFactors || [],
+	requiredDocuments: Array.isArray(scheme.requiredDocuments)
+		? scheme.requiredDocuments
+				.map((doc) => doc?.docName)
+				.filter((docName) => typeof docName === "string" && docName.trim())
+		: [],
 });
 
 exports.getEligibleSchemes = async (req, res) => {
@@ -48,7 +56,17 @@ exports.getEligibleSchemes = async (req, res) => {
 			}
 		}
 
-		res.json({ eligible, potential });
+		// Sort potential schemes by eligibility percentage (highest first)
+		potential.sort((a, b) => b.eligibilityPercentage - a.eligibilityPercentage);
+
+		res.json({
+			eligible,
+			potential,
+			userDocuments: {
+				documentsHeld: user.documentsHeld || [],
+				verifiedDocuments: user.verifiedDocuments || [],
+			},
+		});
 	} catch (error) {
 		res
 			.status(500)

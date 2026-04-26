@@ -7,34 +7,39 @@ const userSchema = new mongoose.Schema(
 			type: String,
 			required: true,
 		},
-		email: {
+		phoneNumber: {
 			type: String,
 			required: true,
 			unique: true,
-			lowercase: true,
 			trim: true,
+			match: [/^\d{10}$/, "phoneNumber must be exactly 10 digits"],
 		},
-		password: {
-			type: String,
-			required: true,
-		},
-		isEmailVerified: {
-			type: Boolean,
-			default: false,
-		},
-		emailVerificationToken: {
+		otp: {
 			type: String,
 		},
-		emailVerificationExpires: {
+		otpExpires: {
 			type: Date,
 		},
-		passwordResetToken: {
+		pendingPhoneNumber: {
 			type: String,
+			trim: true,
+			match: [/^\d{10}$/, "pendingPhoneNumber must be exactly 10 digits"],
 		},
-		passwordResetExpires: {
+		phoneRecoveryStatus: {
+			type: String,
+			enum: ["pending", "approved", "rejected"],
+		},
+		phoneRecoveryRequestedAt: {
 			type: Date,
 		},
-		governmentId: {
+		phoneRecoveryAudit: {
+			isValid: Boolean,
+			confidenceScore: Number,
+			warnings: [String],
+			extractedSnippet: String,
+			aadhaarMatched: Boolean,
+		},
+		aadhaarNumber: {
 			type: String,
 			required: true,
 			unique: true,
@@ -90,6 +95,17 @@ const userSchema = new mongoose.Schema(
 				},
 			},
 		],
+
+		// Voice Preferences
+		preferredLanguage: {
+			type: String,
+			enum: ['hi', 'mr', 'bn', 'en', 'ta', 'te', 'gu', 'kn', 'ml', 'pa'],
+			default: 'en',
+		},
+		languageDetected: {
+			type: Boolean,
+			default: false,
+		},
 	},
 	{ timestamps: true },
 );

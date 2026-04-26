@@ -8,6 +8,11 @@ const buildSchemeResponse = (scheme, result) => ({
 	description: scheme.description,
 	reasons: result.reasons,
 	missingDocuments: result.missingDocuments,
+	requiredDocuments: Array.isArray(scheme.requiredDocuments)
+		? scheme.requiredDocuments
+				.map((doc) => doc?.docName)
+				.filter((docName) => typeof docName === "string" && docName.trim())
+		: [],
 });
 
 const getEligibleSchemesForUser = async (user) => {
@@ -89,6 +94,10 @@ exports.updateProfile = async (req, res) => {
 			success: true,
 			user,
 			schemes,
+			userDocuments: {
+				documentsHeld: user.documentsHeld || [],
+				verifiedDocuments: user.verifiedDocuments || [],
+			},
 		});
 	} catch (error) {
 		res.status(500).json({ message: "Profile update failed", error: error.message });

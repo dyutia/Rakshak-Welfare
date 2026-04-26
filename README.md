@@ -7,10 +7,9 @@ Rakshak Welfare is a comprehensive welfare-assistance platform that helps users 
 ### 🔐 Authentication & Security
 
 - User registration with profile details and government ID verification
-- Email verification with secure token-based links
+- Mobile OTP login (6-digit OTP, 5-minute expiry)
 - JWT-based authentication with HTTP-only cookies
-- Password recovery via email reset links
-- Account security with bcrypt password hashing
+- Account recovery via Aadhaar upload + auditor approval
 
 ### 📋 Eligibility Matching
 
@@ -18,8 +17,9 @@ Rakshak Welfare is a comprehensive welfare-assistance platform that helps users 
   - Age, gender, caste, income, state residency
   - Document verification status
 - **Eligible Schemes**: Fully qualified schemes (all criteria met + documents verified)
-- **Potential Schemes**: Near-miss schemes with improvement suggestions
+- **Potential Schemes**: Near-miss schemes with percentage scoring and improvement suggestions
 - **Real-time Updates**: Eligibility recalculates on profile changes
+- **Percentage Scoring**: Visual progress bars showing how close users are to unlocking schemes
 
 ### 📄 Document Management
 
@@ -34,6 +34,18 @@ Rakshak Welfare is a comprehensive welfare-assistance platform that helps users 
 - OCR extraction and validation using Tesseract.js
 - Fuzzy name matching and date validation
 - Automatic document verification on successful audit
+- **Device-Aware UI**: Mobile camera capture, desktop file upload
+- **Modular Verification**: Weighted confidence scoring per document type
+
+### 🎤 Voice Language Detection
+
+- **First-Time Setup**: Automatic language detection popup on first login
+- **Multi-Language Support**: Hindi, Marathi, Bengali, Tamil, Telugu, Gujarati, Kannada, Malayalam, Punjabi
+- **Bhashini Integration**: TTS for instructional audio, LID for language detection
+- **Smart Sequencing**: Auto-play instructions → Voice recording → Language confirmation
+- **Haptic Feedback**: Vibration when recording starts
+- **Rural Fail-Safe**: Follow-up prompts for no audio detection
+- **Persistent Preference**: Language preference saved to user profile
 
 ### 🗄️ Database Management
 
@@ -45,10 +57,11 @@ Rakshak Welfare is a comprehensive welfare-assistance platform that helps users 
 
 - **Backend**: Node.js, Express.js, MongoDB, Mongoose
 - **Frontend**: React 18, Vite, Tailwind CSS
-- **Authentication**: JWT, bcryptjs
-- **Email**: Nodemailer with SMTP
+- **Authentication**: JWT (OTP-based)
 - **OCR**: Tesseract.js
-- **AI Matching**: Custom eligibility algorithms
+- **AI Matching**: Custom eligibility algorithms with percentage scoring
+- **Voice Services**: Bhashini API (TTS + Language Identification)
+- **Audio Processing**: Web Audio API, MediaRecorder
 
 ## Quick Start
 
@@ -56,7 +69,6 @@ Rakshak Welfare is a comprehensive welfare-assistance platform that helps users 
 
 - Node.js 18+
 - MongoDB Atlas account or local MongoDB
-- SMTP email service (Gmail recommended)
 
 ### Installation
 
@@ -103,13 +115,11 @@ MONGO_URI_DIRECT=mongodb://localhost:27017/rakshak-welfare
 JWT_SECRET=your-super-secure-jwt-secret-here
 CLIENT_URL=http://localhost:5173
 
-# Email (SMTP)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-gmail-app-password
-SMTP_FROM="Rakshak Welfare <your-email@gmail.com>"
+# Auditor (for account recovery approvals)
+AUDITOR_KEY=your-auditor-key-here
+
+# Bhashini Voice Services
+BHASHINI_API_KEY=your-bhashini-api-key-here
 ```
 
 ## API Reference
@@ -119,12 +129,10 @@ SMTP_FROM="Rakshak Welfare <your-email@gmail.com>"
 | Method | Endpoint                        | Description                               |
 | ------ | ------------------------------- | ----------------------------------------- |
 | POST   | `/api/auth/register`            | Register user with auto-document addition |
-| POST   | `/api/auth/verify-email`        | Verify email with token                   |
-| POST   | `/api/auth/resend-verification` | Resend verification email                 |
-| POST   | `/api/auth/login`               | Authenticate verified user                |
+| POST   | `/api/auth/login`               | Generate OTP for phone number             |
+| POST   | `/api/auth/verify-otp`          | Verify OTP and return JWT                 |
+| POST   | `/api/auth/recover-phone`       | Recover account via Aadhaar upload        |
 | POST   | `/api/auth/logout`              | Clear authentication                      |
-| POST   | `/api/auth/forgot-password`     | Send password reset email                 |
-| POST   | `/api/auth/reset-password`      | Reset password with token                 |
 
 ### User Management
 
@@ -143,24 +151,39 @@ SMTP_FROM="Rakshak Welfare <your-email@gmail.com>"
 | Method | Endpoint                  | Description                     |
 | ------ | ------------------------- | ------------------------------- |
 | POST   | `/api/audit/audit-upload` | Upload and audit document image |
+| POST   | `/api/audit/approve-phone-recovery` | Auditor approves phone recovery |
+| POST   | `/api/audit/reject-phone-recovery` | Auditor rejects phone recovery |
+
+### Voice Language Detection
+
+| Method | Endpoint                        | Description                               |
+| ------ | ------------------------------- | ----------------------------------------- |
+| GET    | `/api/voice/instructional-audio` | Get Hindi instructional audio (TTS) |
+| GET    | `/api/voice/followup-audio`     | Get follow-up audio for no speech detected |
+| POST   | `/api/voice/detect-language`     | Upload audio for language identification |
+| POST   | `/api/voice/update-preference`  | Update user's preferred language |
+| GET    | `/api/voice/preference`         | Get user's language preference |
 
 ## User Flow
 
-1. **Registration**: User provides details, selects government ID type → Document auto-added to profile
-2. **Email Verification**: Click verification link to activate account
-3. **Login**: Authenticate with verified credentials
-4. **Eligibility Check**: View matched schemes (eligible + potential with reasons)
-5. **Document Verification**: Upload document images for OCR audit → Verified documents enable more schemes
-6. **Profile Updates**: Modify details to improve eligibility matches
+1. **Registration**: User provides details → Aadhaar saved to prevent duplicate accounts
+2. **Login**: Enter phone number → receive OTP (6 digits, expires in 5 minutes)
+3. **Verify OTP**: Enter OTP → receive JWT → authenticated session
+4. **First-Time Setup**: Voice language detection popup → User speaks → Language preference saved
+5. **Eligibility Check**: View matched schemes (eligible + potential with percentage scores)
+6. **Document Verification**: Upload document images for OCR audit → Verified documents enable more schemes
+7. **Profile Updates**: Modify details to improve eligibility matches
+8. **Account Recovery (phone lost)**: Upload Aadhaar photo + new phone → auditor approves linking
 
 ## Database Schema
 
 ### User Model
 
-- Personal info (name, email, age, gender, caste, income, location)
-- Authentication (password hash, email verification status)
+- Personal info (name, phoneNumber, age, gender, caste, income, location)
+- Authentication (OTP + expiry)
 - Documents (held: self-declared, verified: audited)
-- Government ID (type and number)
+- Government ID (aadhaarNumber)
+- **Voice Preferences**: preferredLanguage, languageDetected
 
 ### Scheme Model
 
@@ -180,7 +203,7 @@ rakshak-welfare/
 │   ├── middleware/         # Auth middleware
 │   ├── models/            # Mongoose schemas
 │   ├── routes/            # API routes
-│   ├── utils/             # Helpers (matcher, audit, mailer)
+│   ├── utils/             # Helpers (matcher, audit)
 │   └── seed.js            # Manual seeding script
 ├── frontend/
 │   ├── src/
@@ -210,91 +233,4 @@ For questions or issues:
 
 - Check the API documentation above
 - Review environment configuration
-- Ensure MongoDB and SMTP are properly configured
-  | POST | `/api/auth/reset-password` | Reset password with token |
-
-### User Management
-
-| Method | Endpoint        | Description                                |
-| ------ | --------------- | ------------------------------------------ |
-| PATCH  | `/api/users/me` | Update profile and recalculate eligibility |
-
-### Scheme Eligibility
-
-| Method | Endpoint                | Description                                     |
-| ------ | ----------------------- | ----------------------------------------------- |
-| GET    | `/api/schemes/eligible` | Get eligible and potential schemes with reasons |
-
-### Document Audit
-
-| Method | Endpoint                  | Description                     |
-| ------ | ------------------------- | ------------------------------- |
-| POST   | `/api/audit/audit-upload` | Upload and audit document image |
-
-## User Flow
-
-1. **Registration**: User provides details, selects government ID type → Document auto-added to profile
-2. **Email Verification**: Click verification link to activate account
-3. **Login**: Authenticate with verified credentials
-4. **Eligibility Check**: View matched schemes (eligible + potential with reasons)
-5. **Document Verification**: Upload document images for OCR audit → Verified documents enable more schemes
-6. **Profile Updates**: Modify details to improve eligibility matches
-
-## Database Schema
-
-### User Model
-
-- Personal info (name, email, age, gender, caste, income, location)
-- Authentication (password hash, email verification status)
-- Documents (held: self-declared, verified: audited)
-- Government ID (type and number)
-
-### Scheme Model
-
-- Scheme details (name, department, state, description)
-- Eligibility criteria (age range, income limit, gender, caste)
-- Required documents array
-- Application link
-
-## Project Structure
-
-```
-rakshak-welfare/
-├── backend/
-│   ├── app.js              # Main server with auto-seeding
-│   ├── config/db.js        # Database connection
-│   ├── controllers/        # Route handlers
-│   ├── middleware/         # Auth middleware
-│   ├── models/            # Mongoose schemas
-│   ├── routes/            # API routes
-│   ├── utils/             # Helpers (matcher, audit, mailer)
-│   └── seed.js            # Manual seeding script
-├── frontend/
-│   ├── src/
-│   │   ├── App.jsx        # Main React app
-│   │   ├── api.js         # API client
-│   │   └── assets/        # Static files
-│   ├── package.json
-│   └── vite.config.js
-└── README.md
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Support
-
-For questions or issues:
-
-- Check the API documentation above
-- Review environment configuration
-- Ensure MongoDB and SMTP are properly configured
+- Ensure MongoDB is properly configured

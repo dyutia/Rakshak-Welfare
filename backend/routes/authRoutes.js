@@ -2,22 +2,18 @@ const express = require("express");
 const {
 	register,
 	login,
+	verifyOtp,
+	recoveryUpload,
+	requestPhoneRecovery,
 	logout,
-	forgotPassword,
-	resetPassword,
-	verifyEmail,
-	resendVerification,
 } = require("../controllers/authController");
 
 const router = express.Router();
 
 router.post("/register", register);
 router.post("/login", login);
+router.post("/verify-otp", verifyOtp);
+router.post("/recover-phone", recoveryUpload, requestPhoneRecovery);
 router.post("/logout", logout);
-router.post("/forgot-password", forgotPassword);
-router.post("/reset-password", resetPassword);
-router.post("/verify-email", verifyEmail);
-router.get("/verify-email", verifyEmail);
-router.post("/resend-verification", resendVerification);
 
 module.exports = router;
